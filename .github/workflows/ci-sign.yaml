@@ -13,22 +13,11 @@ permissions:
   contents: read
 
 jobs:
-  config:
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      os_ubuntu: ${{ steps.cfg.outputs.os_ubuntu }}
-    steps:
-      - name: Load workflow config
-        uses: durandtibo/workflow-config-action@6a12598cf8ab42549b10a25432394dd826bffa59 # ratchet:durandtibo/workflow-config-action@v0.1
-        id: cfg
-
   build:
-    needs: config
     # Only the build-package action needs OS coverage (see
     # ci-build-package.yaml); signing/publishing aren't OS-dependent, so a
     # single build here just produces the one "dist" artifact sign consumes.
-    runs-on: ${{ fromJSON(needs.config.outputs.os_ubuntu)[0] }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -41,8 +30,8 @@ jobs:
         uses: ./build-package
 
   sign:
-    needs: [config, build]
-    runs-on: ${{ fromJSON(needs.config.outputs.os_ubuntu)[0] }}
+    needs: build
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       id-token: write # Sigstore OIDC keyless signing

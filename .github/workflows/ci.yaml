@@ -1,5 +1,6 @@
 # Main CI workflow that orchestrates all quality checks and tests.
-# Runs on pull requests, pushes to main, and manual dispatch.
+# Runs on pull requests, pushes to main, a nightly schedule, and manual
+# dispatch.
 #
 # The individual check jobs below call out to per-check reusable workflows
 # (ci-build-package.yaml) instead of inlining their steps here, so each

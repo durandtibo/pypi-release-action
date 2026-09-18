@@ -3,8 +3,7 @@
 # push/PR: it only builds and smoke-tests a throwaway package, no publishing
 # or signing involved.
 #
-# Called from ci.yaml, which owns the push/PR trigger (gated to the
-# build-package/test-fixture paths this workflow cares about) so it can
+# Called from ci.yaml, which owns the push/PR/schedule trigger, so it can
 # still be run/dispatched on its own via workflow_dispatch.
 
 name: Build package
