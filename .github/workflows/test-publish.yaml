@@ -1,0 +1,53 @@
+# Tests the `publish` composite action by publishing the fixture package to
+# TestPyPI (never real PyPI) via Trusted Publishing.
+#
+# One-time setup required before this can pass: register a TestPyPI Trusted
+# Publisher for a "pypi-release-action-fixture" project pointing at this
+# repo, workflow file "test-publish.yaml", environment "testpypi".
+# See https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+# (use test.pypi.org's equivalent page).
+#
+# Manual trigger only, since it publishes a real (test) package version.
+
+name: Test publish action
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Only the build-package action needs OS coverage (see
+    # test-build-package.yaml); publishing isn't OS-dependent, so a single
+    # build here just produces the one "dist" artifact publish consumes.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Stage fixture package at repo root
+        run: cp -r test/fixtures/pkg/. .
+
+      - name: Run build-package action
+        uses: ./build-package
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/pypi-release-action-fixture/
+    permissions:
+      id-token: write # PyPI Trusted Publishing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Run publish action
+        uses: ./publish
+        with:
+          workflow-filename: test-publish.yaml
+          repository-url: https://test.pypi.org/legacy/

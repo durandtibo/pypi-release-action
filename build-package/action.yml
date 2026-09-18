@@ -10,6 +10,10 @@ inputs:
     description: Python version used to build and smoke test the package
     required: false
     default: "3.12"
+  artifact-name:
+    description: Name of the uploaded distribution artifact
+    required: false
+    default: "dist"
 
 outputs:
   package-name:
@@ -95,11 +99,12 @@ runs:
       env:
         PACKAGE_NAME: ${{ steps.metadata.outputs.name }}
       run: |
+        # Distribution names may contain hyphens/dots (PEP 503), but the
+        # importable module name uses underscores instead.
+        MODULE_NAME=$(echo "${PACKAGE_NAME}" | tr '.-' '_')
         uv venv smoke-test-venv
-        source smoke-test-venv/bin/activate
-        uv pip install dist/*.whl
-        python -c "import importlib; importlib.import_module('${PACKAGE_NAME}')"
-        deactivate
+        uv pip install --python smoke-test-venv dist/*.whl
+        uv run --python smoke-test-venv --no-project -- python -c "import importlib; importlib.import_module('${MODULE_NAME}')"
 
     - name: Generate checksums
       shell: bash
@@ -109,6 +114,6 @@ runs:
     - name: Upload distribution artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
       with:
-        name: dist
+        name: ${{ inputs.artifact-name }}
         path: dist/
         retention-days: 5
