@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   config:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     outputs:
       os_all: ${{ steps.cfg.outputs.os_all }}
