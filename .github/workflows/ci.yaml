@@ -1,0 +1,35 @@
+# Main CI workflow that orchestrates all quality checks and tests.
+# Runs on pull requests, pushes to main, a nightly schedule, and manual
+# dispatch.
+#
+# The individual check jobs below call out to per-check reusable workflows
+# (ci-build-package.yaml) instead of inlining their steps here, so each
+# check can still be run/dispatched on its own (workflow_dispatch) and to
+# keep this file short.
+#
+# Deliberately NOT called from here, each standalone with its own trigger:
+#   - ci-sign.yaml / ci-publish.yaml: create real (if throwaway/test)
+#     GitHub releases and TestPyPI packages, so they're manual-only
+#     (workflow_dispatch), not run on every push/PR.
+#   - ci-verify-workflows.yaml: lints .github/workflows/* itself, so it
+#     triggers on workflow-file changes rather than every PR/push.
+
+name: CI
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "10 9 * * *" # Run nightly at 9:10 AM UTC to catch issues from external changes
+  workflow_dispatch: # to trigger manually
+
+permissions:
+  contents: read
+
+jobs:
+  # Build and smoke-test the build-package composite action across OSes.
+  build:
+    uses: ./.github/workflows/ci-build-package.yaml

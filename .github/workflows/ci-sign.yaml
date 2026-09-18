@@ -2,10 +2,10 @@
 # GitHub release/tag, signs a fixture package's distributions with Sigstore,
 # and attaches them to that release, then deletes the release/tag again.
 #
-# Manual trigger only: unlike test-build-package, this creates real (if
+# Manual trigger only: unlike ci-build-package, this creates real (if
 # short-lived) GitHub releases/tags, so it's not run on every push/PR.
 
-name: Test sign action
+name: Sign
 on:
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     # Only the build-package action needs OS coverage (see
-    # test-build-package.yaml); signing/publishing aren't OS-dependent, so a
+    # ci-build-package.yaml); signing/publishing aren't OS-dependent, so a
     # single build here just produces the one "dist" artifact sign consumes.
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -45,11 +45,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="test-sign-${{ github.run_id }}-${{ github.run_attempt }}"
+          tag="ci-sign-${{ github.run_id }}-${{ github.run_attempt }}"
           gh release create "$tag" \
             --repo "${{ github.repository }}" \
             --title "Test run $tag (throwaway, will be deleted)" \
-            --notes "Created by the test-sign workflow, safe to ignore/delete." \
+            --notes "Created by the ci-sign workflow, safe to ignore/delete." \
             --target "${{ github.sha }}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
