@@ -99,9 +99,12 @@ runs:
       env:
         PACKAGE_NAME: ${{ steps.metadata.outputs.name }}
       run: |
+        # Distribution names may contain hyphens/dots (PEP 503), but the
+        # importable module name uses underscores instead.
+        MODULE_NAME=$(echo "${PACKAGE_NAME}" | tr '.-' '_')
         uv venv smoke-test-venv
         uv pip install --python smoke-test-venv dist/*.whl
-        uv run --python smoke-test-venv --no-project -- python -c "import importlib; importlib.import_module('${PACKAGE_NAME}')"
+        uv run --python smoke-test-venv --no-project -- python -c "import importlib; importlib.import_module('${MODULE_NAME}')"
 
     - name: Generate checksums
       shell: bash
