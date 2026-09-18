@@ -6,7 +6,8 @@ build-backend = "hatchling.build"
 name = "pypi-release-action-fixture"
 version = "0.0.1a1"
 description = "Throwaway fixture package used to test pypi-release-action composite actions."
-requires-python = ">=3.9"
+readme = "README.md"
+requires-python = ">=3.10"
 
 [tool.hatch.build.targets.wheel]
 packages = ["pypi_release_action_fixture"]
