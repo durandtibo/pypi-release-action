@@ -3,13 +3,13 @@
 #
 # One-time setup required before this can pass: register a TestPyPI Trusted
 # Publisher for a "pypi-release-action-fixture" project pointing at this
-# repo, workflow file "test-publish.yaml", environment "testpypi".
+# repo, workflow file "ci-publish.yaml", environment "testpypi".
 # See https://docs.pypi.org/trusted-publishers/adding-a-publisher/
 # (use test.pypi.org's equivalent page).
 #
 # Manual trigger only, since it publishes a real (test) package version.
 
-name: Test publish action
+name: Publish
 on:
   workflow_dispatch:
 
@@ -19,7 +19,7 @@ permissions:
 jobs:
   build:
     # Only the build-package action needs OS coverage (see
-    # test-build-package.yaml); publishing isn't OS-dependent, so a single
+    # ci-build-package.yaml); publishing isn't OS-dependent, so a single
     # build here just produces the one "dist" artifact publish consumes.
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -49,5 +49,5 @@ jobs:
       - name: Run publish action
         uses: ./publish
         with:
-          workflow-filename: test-publish.yaml
+          workflow-filename: ci-publish.yaml
           repository-url: https://test.pypi.org/legacy/

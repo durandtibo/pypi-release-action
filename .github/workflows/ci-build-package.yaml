@@ -2,31 +2,36 @@
 # test/fixtures/pkg, across Linux/macOS/Windows. Safe to run on every
 # push/PR: it only builds and smoke-tests a throwaway package, no publishing
 # or signing involved.
+#
+# Called from ci.yaml, which owns the push/PR trigger (gated to the
+# build-package/test-fixture paths this workflow cares about) so it can
+# still be run/dispatched on its own via workflow_dispatch.
 
-name: Test build-package action
+name: Build package
 on:
-  push:
-    branches: [main]
-    paths:
-      - "build-package/**"
-      - "test/fixtures/pkg/**"
-      - ".github/workflows/test-build-package.yaml"
-  pull_request:
-    paths:
-      - "build-package/**"
-      - "test/fixtures/pkg/**"
-      - ".github/workflows/test-build-package.yaml"
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      os_all: ${{ steps.cfg.outputs.os_all }}
+    steps:
+      - name: Load workflow config
+        uses: durandtibo/workflow-config-action@6a12598cf8ab42549b10a25432394dd826bffa59 # ratchet:durandtibo/workflow-config-action@v0.1
+        id: cfg
+
   build:
+    needs: config
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ fromJSON(needs.config.outputs.os_all) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
@@ -65,11 +70,11 @@ jobs:
           ls dist/*.whl dist/*.tar.gz dist/SHA256SUMS
 
   verify-artifact:
-    needs: build
+    needs: [config, build]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ fromJSON(needs.config.outputs.os_all) }}
     # Verification just inspects already-built, OS-independent files
     # (wheel/sdist/checksums), so one runner is enough regardless of which
     # OS produced each artifact.
