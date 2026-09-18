@@ -14,6 +14,14 @@ inputs:
       Publisher for this project, since it is used to verify the Sigstore
       certificate identity on tag pushes.
     required: true
+  repository-url:
+    description: >
+      Target package index URL, passed through to pypa/gh-action-pypi-publish.
+      Leave unset to publish to PyPI. Set to
+      "https://test.pypi.org/legacy/" to publish to TestPyPI instead, e.g.
+      when testing this action.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -46,3 +54,5 @@ runs:
 
     - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # ratchet:pypa/gh-action-pypi-publish@v1.14.2
+      with:
+        repository-url: ${{ inputs.repository-url || 'https://upload.pypi.org/legacy/' }}

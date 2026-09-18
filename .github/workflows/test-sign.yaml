@@ -1,0 +1,76 @@
+# Tests the `sign` composite action end-to-end: it creates a throwaway
+# GitHub release/tag, signs a fixture package's distributions with Sigstore,
+# and attaches them to that release, then deletes the release/tag again.
+#
+# Manual trigger only: unlike test-build-package, this creates real (if
+# short-lived) GitHub releases/tags, so it's not run on every push/PR.
+
+name: Test sign action
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Stage fixture package at repo root
+        run: cp -r test/fixtures/pkg/. .
+
+      - name: Run build-package action
+        uses: ./build-package
+
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write # Sigstore OIDC keyless signing
+      contents: write # create/delete the throwaway release and attach assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Create throwaway release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="test-sign-${{ github.run_id }}-${{ github.run_attempt }}"
+          gh release create "$tag" \
+            --repo "${{ github.repository }}" \
+            --title "Test run $tag (throwaway, will be deleted)" \
+            --notes "Created by the test-sign workflow, safe to ignore/delete." \
+            --target "${{ github.sha }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Run sign action
+        uses: ./sign
+        with:
+          tag-name: ${{ steps.release.outputs.tag }}
+
+      - name: Assert signature bundles were produced
+        run: |
+          ls dist/*.sigstore.json
+
+      - name: Assert signatures were attached to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${{ steps.release.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --json assets --jq '.assets[].name' | grep -q '\.sigstore\.json$'
+
+      - name: Delete throwaway release and tag
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "${{ steps.release.outputs.tag }}" \
+            --repo "${{ github.repository }}" --yes --cleanup-tag || true

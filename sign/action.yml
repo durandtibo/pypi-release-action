@@ -5,6 +5,15 @@ description: >
   everything to the current GitHub release. Requires `id-token: write` and
   `contents: write` permissions on the calling job.
 
+inputs:
+  tag-name:
+    description: >
+      Tag/release to attach the signed assets to. Leave unset to use the tag
+      that triggered the workflow (the normal case, github.ref_name). Set
+      explicitly when testing this action from a non-tag trigger.
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -34,6 +43,7 @@ runs:
     - name: Upload artifacts and signatures to GitHub release
       uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # ratchet:softprops/action-gh-release@v3.0.3
       with:
+        tag_name: ${{ inputs.tag-name || github.ref_name }}
         files: |
           dist/*.tar.gz
           dist/*.whl
