@@ -18,7 +18,10 @@ permissions:
 
 jobs:
   build:
-    runs-on: [ ubuntu-latest, macos-latest, windows-latest ]
+    # Only the build-package action needs OS coverage (see
+    # test-build-package.yaml); publishing isn't OS-dependent, so a single
+    # build here just produces the one "dist" artifact publish consumes.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -32,7 +35,7 @@ jobs:
 
   publish:
     needs: build
-    runs-on: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     environment:
       name: testpypi
