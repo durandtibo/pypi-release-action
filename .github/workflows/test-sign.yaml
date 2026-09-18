@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [ ubuntu-latest, macos-latest, windows-latest ]
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -28,7 +28,7 @@ jobs:
 
   sign:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [ ubuntu-latest, macos-latest, windows-latest ]
     timeout-minutes: 5
     permissions:
       id-token: write # Sigstore OIDC keyless signing

@@ -5,7 +5,7 @@
 name: Test build-package action
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - "build-package/**"
       - "test/fixtures/pkg/**"
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [ ubuntu-latest, macos-latest, windows-latest ]
     timeout-minutes: 5
     outputs:
       package-name: ${{ steps.build.outputs.package-name }}
@@ -59,7 +59,7 @@ jobs:
 
   verify-artifact:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [ ubuntu-latest, macos-latest, windows-latest ]
     timeout-minutes: 5
     steps:
       - name: Download dist artifact
