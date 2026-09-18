@@ -1,0 +1,41 @@
+name: Sign and release PyPI package
+description: >
+  Downloads the "dist" artifact, verifies its checksums, signs the
+  distributions with Sigstore, uploads a "signatures" artifact, and attaches
+  everything to the current GitHub release. Requires `id-token: write` and
+  `contents: write` permissions on the calling job.
+
+runs:
+  using: composite
+  steps:
+    - name: Download distribution artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # ratchet:actions/download-artifact@v8.0.1
+      with:
+        name: dist
+        path: dist/
+
+    - name: Verify checksums
+      shell: bash
+      run: |
+        cd dist && sha256sum --check SHA256SUMS
+
+    - name: Sign distributions with Sigstore
+      uses: sigstore/gh-action-sigstore-python@790bc6befb9d733738f18d8f895854b453640ec9 # ratchet:sigstore/gh-action-sigstore-python@v3.5.0
+      with:
+        inputs: dist/*.tar.gz dist/*.whl
+
+    - name: Upload signature bundles
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
+      with:
+        name: signatures
+        path: dist/*.sigstore.json
+        retention-days: 5
+
+    - name: Upload artifacts and signatures to GitHub release
+      uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # ratchet:softprops/action-gh-release@v3.0.3
+      with:
+        files: |
+          dist/*.tar.gz
+          dist/*.whl
+          dist/*.sigstore.json
+          dist/SHA256SUMS
