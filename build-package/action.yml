@@ -100,10 +100,8 @@ runs:
         PACKAGE_NAME: ${{ steps.metadata.outputs.name }}
       run: |
         uv venv smoke-test-venv
-        source smoke-test-venv/bin/activate
-        uv pip install dist/*.whl
-        python -c "import importlib; importlib.import_module('${PACKAGE_NAME}')"
-        deactivate
+        uv pip install --python smoke-test-venv dist/*.whl
+        uv run --python smoke-test-venv --no-project -- python -c "import importlib; importlib.import_module('${PACKAGE_NAME}')"
 
     - name: Generate checksums
       shell: bash
