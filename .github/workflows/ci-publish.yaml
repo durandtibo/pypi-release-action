@@ -1,5 +1,6 @@
 # Tests the `publish` composite action by publishing the fixture package to
-# TestPyPI (never real PyPI) via Trusted Publishing.
+# TestPyPI (never real PyPI) via Trusted Publishing. Also tests its
+# checksum-verification failure path (reject-tampered-checksums).
 #
 # One-time setup required before this can pass: register a TestPyPI Trusted
 # Publisher for a "pypi-release-action-fixture" project pointing at this
@@ -51,3 +52,46 @@ jobs:
         with:
           workflow-filename: ci-publish.yaml
           repository-url: https://test.pypi.org/legacy/
+
+  reject-tampered-checksums:
+    # publish must fail closed if the downloaded "dist" artifact doesn't
+    # match the checksums recorded at build time (e.g. artifact corruption
+    # or tampering), before it ever attempts to publish anything. Doesn't
+    # need PyPI/OIDC permissions since it never reaches the publish step.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Stage fixture package at repo root
+        run: cp -r test/fixtures/pkg/. .
+
+      - name: Run build-package action
+        uses: ./build-package
+        with:
+          artifact-name: dist-tampered-source
+
+      - name: Tamper with a built distribution
+        run: echo "corrupted" >> dist/*.tar.gz
+
+      - name: Re-upload dist artifact under the name publish expects
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+      - name: Run publish action
+        id: publish
+        continue-on-error: true
+        uses: ./publish
+        with:
+          workflow-filename: ci-publish.yaml
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Assert publish action failed
+        run: |
+          test "${{ steps.publish.outcome }}" = "failure" || {
+            echo "::error::expected publish to fail on tampered checksums, got outcome=${{ steps.publish.outcome }}"; exit 1;
+          }
