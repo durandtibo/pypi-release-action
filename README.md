@@ -20,7 +20,8 @@ environment gate:
 - Uses [`uv`](https://docs.astral.sh/uv/) and [`invoke`](https://www.pyinvoke.org/)
   as the build tooling. The repo must provide:
   - `make install-invoke` — installs the `inv` CLI.
-  - `inv build-package` — builds sdist/wheel into `dist/`.
+  - `inv build-package` (or a custom `build-command`) — builds sdist/wheel
+    into `dist/`.
 - Each job that uses one of these actions must `actions/checkout` first —
   composite actions run inside the caller's job/checkout, they don't do it
   for you.
@@ -94,7 +95,8 @@ jobs:
 
 | Name             | Required | Default | Description                                                |
 | ---------------- | -------- | ------- | ------------------------------------------------------------ |
-| `python-version` | no       | `3.12`  | Python version used to build and smoke test the package.     |
+| `python-version` | no       | `3.14`  | Python version used to build and smoke test the package.     |
+| `build-command`  | no       | `inv build-package` | Command used to build the package.               |
 
 ### `build-package` outputs
 
