@@ -1,7 +1,9 @@
 # Tests the `build-package` composite action against the fixture package in
-# test/fixtures/pkg, across Linux/macOS/Windows. Safe to run on every
-# push/PR: it only builds and smoke-tests a throwaway package, no publishing
-# or signing involved.
+# test/fixtures/pkg, across Linux/macOS/Windows, plus the fixtures in
+# test/fixtures/pkg-published and test/fixtures/pkg-plain-version, which
+# exercise its failure paths (already-published version, plain version on a
+# manual run). Safe to run on every push/PR: it only builds and smoke-tests
+# throwaway packages, no publishing or signing involved.
 #
 # Called from ci.yaml, which owns the push/PR/schedule trigger, so it can
 # still be run/dispatched on its own via workflow_dispatch.
@@ -67,6 +69,62 @@ jobs:
         shell: bash
         run: |
           ls dist/*.whl dist/*.tar.gz dist/SHA256SUMS
+
+  reject-already-published-version:
+    # build-package must fail closed when the package name/version it built
+    # is already published on PyPI, regardless of how it was triggered.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      # This fixture claims to be "requests" 2.31.0, a name/version already
+      # published on PyPI, so the action's "already published" check should
+      # reject it before it ever gets to the smoke test.
+      - name: Stage fixture package at repo root
+        shell: bash
+        run: cp -r test/fixtures/pkg-published/. .
+
+      - name: Run build-package action
+        id: build
+        continue-on-error: true
+        uses: ./build-package
+
+      - name: Assert build-package action failed
+        shell: bash
+        run: |
+          test "${{ steps.build.outcome }}" = "failure" || {
+            echo "::error::expected build-package to fail on an already-published version, got outcome=${{ steps.build.outcome }}"; exit 1;
+          }
+
+  reject-plain-version-on-manual-run:
+    # build-package must reject workflow_dispatch runs that target a plain
+    # release version instead of a dev/pre-release one. This check is only
+    # exercised when this workflow itself is dispatched manually, since
+    # calls from ci.yaml (workflow_call) never look like workflow_dispatch.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Stage fixture package at repo root
+        shell: bash
+        run: cp -r test/fixtures/pkg-plain-version/. .
+
+      - name: Run build-package action
+        id: build
+        continue-on-error: true
+        uses: ./build-package
+
+      - name: Assert build-package action failed
+        shell: bash
+        run: |
+          test "${{ steps.build.outcome }}" = "failure" || {
+            echo "::error::expected build-package to fail on a manual run with a plain release version, got outcome=${{ steps.build.outcome }}"; exit 1;
+          }
 
   verify-artifact:
     needs: [config, build]

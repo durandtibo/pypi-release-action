@@ -1,6 +1,7 @@
 # Tests the `sign` composite action end-to-end: it creates a throwaway
 # GitHub release/tag, signs a fixture package's distributions with Sigstore,
 # and attaches them to that release, then deletes the release/tag again.
+# Also tests its checksum-verification failure path (reject-tampered-checksums).
 #
 # Manual trigger only: unlike ci-build-package, this creates real (if
 # short-lived) GitHub releases/tags, so it's not run on every push/PR.
@@ -77,3 +78,45 @@ jobs:
         run: |
           gh release delete "${{ steps.release.outputs.tag }}" \
             --repo "${{ github.repository }}" --yes --cleanup-tag || true
+
+  reject-tampered-checksums:
+    # sign must fail closed if the downloaded "dist" artifact doesn't match
+    # the checksums recorded at build time, before signing anything or
+    # touching a release. Doesn't need id-token/contents permissions since
+    # it never reaches those steps.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Stage fixture package at repo root
+        run: cp -r test/fixtures/pkg/. .
+
+      - name: Run build-package action
+        uses: ./build-package
+        with:
+          artifact-name: dist-tampered-source
+
+      - name: Tamper with a built distribution
+        run: echo "corrupted" >> dist/*.tar.gz
+
+      - name: Re-upload dist artifact under the name sign expects
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+      - name: Run sign action
+        id: sign
+        continue-on-error: true
+        uses: ./sign
+        with:
+          tag-name: ci-sign-checksum-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Assert sign action failed
+        run: |
+          test "${{ steps.sign.outcome }}" = "failure" || {
+            echo "::error::expected sign to fail on tampered checksums, got outcome=${{ steps.sign.outcome }}"; exit 1;
+          }
