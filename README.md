@@ -93,15 +93,15 @@ jobs:
 
 ### `build-package` inputs
 
-| Name             | Required | Default | Description                                                |
-| ---------------- | -------- | ------- | ------------------------------------------------------------ |
-| `python-version` | no       | `3.14`  | Python version used to build and smoke test the package.     |
-| `build-command`  | no       | `inv build-package` | Command used to build the package.               |
+| Name             | Required | Default             | Description                                              |
+| ---------------- | -------- | ------------------- | -------------------------------------------------------- |
+| `python-version` | no       | `3.14`              | Python version used to build and smoke test the package. |
+| `build-command`  | no       | `inv build-package` | Command used to build the package.                       |
 
 ### `build-package` outputs
 
-| Name              | Description                                    |
-| ----------------- | ----------------------------------------------- |
+| Name              | Description                                      |
+| ----------------- | ------------------------------------------------ |
 | `package-name`    | Package name extracted from `pyproject.toml`.    |
 | `package-version` | Package version extracted from `pyproject.toml`. |
 
@@ -111,9 +111,9 @@ None.
 
 ### `publish` inputs
 
-| Name                 | Required | Default | Description                                                                                 |
-| -------------------- | -------- | ------- | --------------------------------------------------------------------------------------------- |
-| `workflow-filename`  | yes      | -       | Filename of the calling workflow (e.g. `release-pypi.yaml`), used to verify Sigstore identity. |
+| Name                | Required | Default | Description                                                                                    |
+| ------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `workflow-filename` | yes      | -       | Filename of the calling workflow (e.g. `release-pypi.yaml`), used to verify Sigstore identity. |
 
 ## Behavior
 
