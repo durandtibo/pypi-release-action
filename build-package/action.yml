@@ -9,11 +9,15 @@ inputs:
   python-version:
     description: Python version used to build and smoke test the package
     required: false
-    default: "3.12"
+    default: "3.14"
   artifact-name:
     description: Name of the uploaded distribution artifact
     required: false
     default: "dist"
+  build-command:
+    description: Command used to build the package
+    required: false
+    default: "inv build-package"
 
 outputs:
   package-name:
@@ -41,8 +45,10 @@ runs:
 
     - name: Build package
       shell: bash
+      env:
+        BUILD_COMMAND: ${{ inputs.build-command }}
       run: |
-        inv build-package
+        ${BUILD_COMMAND}
 
     - name: Check package metadata
       shell: bash
