@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "requests"
+version = "2.31.0"
+description = "Throwaway fixture package that reuses a name/version already published on PyPI, used to test that build-package rejects re-publishing an existing version."
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.hatch.build.targets.wheel]
+packages = ["requests"]
